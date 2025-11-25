@@ -1,0 +1,40 @@
+-- CardanoGovernance.plutus
+-- Placeholder for governance token staking
+
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
+module CardanoGovernance where
+
+import           PlutusTx
+import           PlutusTx.Prelude
+import           Ledger
+import           Ledger.Typed.Scripts
+import           Ledger.Value
+
+-- Governance token staking datum
+data GovernanceDatum = GovernanceDatum
+    { gdOwner :: PubKeyHash
+    , gdAmount :: Integer
+    } deriving Show
+
+PlutusTx.unstableMakeIsData ''GovernanceDatum
+
+-- Placeholder validator
+{-# INLINABLE mkValidator #-}
+mkValidator :: GovernanceDatum -> () -> ScriptContext -> Bool
+mkValidator datum _ _ = traceIfFalse "Stake must be positive" (gdAmount datum > 0)
+
+data Governance
+instance Scripts.ValidatorTypes Governance where
+    type instance DatumType Governance = GovernanceDatum
+    type instance RedeemerType Governance = ()
+
+typedValidator :: Scripts.TypedValidator Governance
+typedValidator = Scripts.mkTypedValidator @Governance
+    1027(PlutusTx.compile [|| mkValidator ||])
+    1027(PlutusTx.compile [|| wrap ||])
+  where
+    wrap = Scripts.wrapValidator @GovernanceDatum @()
